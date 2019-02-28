@@ -30,7 +30,7 @@ for file = files'
     %Hist Equalisation. For the moment it doesn't give us improved results
     
     %faceIm = enhanceContrastALS(uint8(faceIm));
-    
+    %Automatic Linear stretching. For the moment it doesn't give us improved results
     faceImages(count, :, :) = faceIm;
 end
 %faceFeatures is now an array of face images
