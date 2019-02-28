@@ -1,10 +1,9 @@
-function [Iout, Lut] = enhanceContrastALS(Iin)
-%enhanceContrastALS = enhance Contrast Automatic Linear Stretching
+function Iout = enhancedContrastALS(Iin)
 %Modified version of enhancedContrast function where m and c are
 %automaticlly calculated without user input
 
 % Using for loop to extract the min and max pixel values - where amount of
-% pixels is >= 10 ( to reduce possible noise)
+% pixels is > 10 ( to reduce possible noise)
 a = (1:255);
 for index = 1:255
     k = find(Iin == index, 10);
