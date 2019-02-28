@@ -1,6 +1,11 @@
 clear all
 close all
 
+addpath .\SVM-KM\ 
+%In order to use the provided SVM toolbox. We must add the path to the toolbox folder. 
+%This folder is in prac 5
+
+
 %% Easiest and most basic method of feature extraction and sampling for training and testing data.
 %Might be useful to compare accuracy of basic method with attempts of
 %improving later. For the moment this method of sampling is better because the
@@ -18,22 +23,67 @@ close all
 %We should only change the sampling value of loadFaceImages if we are doing
 %processing later that takes up a lot of time
 
-%% Then training models
+%% Gabor features - Training feature descriptor
+%Converting trainfeatures data to images where they can be preprocessed and
+%also gabor features function can be implemented
+gabortrainFeatures = zeros(670, 19440);
+for i = 1:size(trainFeatures, 1)
+    Im = reshape(trainFeatures(i,:),27,18);
+    
+    Im = enhanceContrastHE(uint8(Im));
+    %Hist Equalisation. Gives us a large improvement when used with gabor.
+    %Accuracy is 0.9042
+    
+    %Im = enhanceContrastALS(uint8(Im));
+    %Automatic Linear stretching. Gives us an improvement when used with gabor.
+    %Accuracy is 0.8292
+        
+    Im = gabor_feature_vector(Im); %Produces 19,440 features 
+    gabortrainFeatures(i,:) = Im;
+end
+%% Training models - Full images
 %Supervised Nearest Neighbour Training
 %modelNN = NNtraining(trainFeatures, trainLabs);
 
 %Supervised SVM Training
-modelSVM = SVMtraining(trainFeatures, trainLabs);
+%modelSVM = SVMtraining(trainFeatures, trainLabs);
+
+%% Training models - Gabor features
+%modelNN = NNtraining(gabortrainFeatures, trainLabs);
+
+%Supervised SVM Training
+modelSVM = SVMtraining(gabortrainFeatures, trainLabs);
+
 
 %% Then extracting testing images
 [testFeatures, testLabs] = loadFaceImages('face_test.cdataset', 1);
 %Returns a testing data size of 240 from the 30 images in the
 %testing dataset
 
-%% Then testing model
+%% Gabor features - Testing feature descriptor - Comment out if using another feature method
+%Converting trainfeatures data to images where they can be preprocessed and
+%also gabor features function can be implemented
+gabortestFeatures = zeros(240, 19440);
+for i = 1:size(testFeatures, 1)
+    Im = reshape(testFeatures(i,:),27,18);
+    
+    Im = enhanceContrastHE(uint8(Im));
+    %Hist Equalisation. For the moment it doesn't give us improved results
+    
+    %Im = enhanceContrastALS(uint8(Im));
+    %Automatic Linear stretching. For the moment it doesn't give us improved results
+        
+    Im = gabor_feature_vector(Im); %Produces 19,440 features 
+    gabortestFeatures(i,:) = Im;
+end
+
+%% Testing model
 for i=1:size(testFeatures,1)
     
-    testnumber= testFeatures(i,:);
+    %testnumber= testFeatures(i,:); % For full image feature descriptor
+    
+    testnumber= gabortestFeatures(i,:); % For gabor feature descriptor
+
     %% NN model
     %classificationResult(i,1) = NNTesting(testnumber, modelNN);
     %Accuracy is 0.5083. Which is again strange. Gives a reverse of what
@@ -45,7 +95,9 @@ for i=1:size(testFeatures,1)
     
     %% SVM Model
     classificationResult(i,1) = SVMTesting(testnumber,modelSVM);
-    %SVM accuracy with no changed parameters and basic sampling method is 0.7083
+    %SVM accuracy with no changed parameters and full image feature desc is 0.7083
+    %SVM accuracy with no changed parameters, hist equalisation
+    %and gabor feature desc is 0.9042
 
 end
 
