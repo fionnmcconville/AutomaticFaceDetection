@@ -1,7 +1,7 @@
 clear all
 close all
 
-%% For loadFaceImages:
+%% For loadFaceImages
 
 %If we use, we should only have the sampling at 1 so we can use as much training data as
 %possible. Only alter this if we are doing a processing method which takes
@@ -38,7 +38,7 @@ faceFeatures = reshape(faceImages, 69, 486);
 %The above will create an array of 69 images with 486 pixels as a feature
 %vector
 
-nonFaceImages = zeros(59,27,18); % initialise 2D array to hold 59 27x18 images 
+nonFaceImages = zeros(55,27,18); % initialise 2D array to hold 55 27x18 images 
 path1 = './images/non-face/*.png';
 files1 = dir(path1);
 count = 0;
@@ -56,7 +56,7 @@ for file = files1'
 end
 %nonFaceFeatures is now an array of face images. The array order will not
 %necessarily correspond to the numbering of the files in the directory
-nonFaceFeatures = reshape(nonFaceImages, 59, 486);
+nonFaceFeatures = reshape(nonFaceImages, 55, 486);
 
 %Now we combine the feature vectors for the 69 raw face images and the 59 raw non-face
 %images into one overall structure. 
@@ -65,7 +65,7 @@ totalFeatureV = [faceFeatures(:,:); nonFaceFeatures(:,:)];
 
 %Label is 1 for face images and 0 for non-face images.
 totalLabels(1:69) = 1;
-totalLabels(70:128) = 0;
+totalLabels(70:124) = 0;
 
 %Now we create a dataset which contains the totality of all the images. The
 %first column will be each image's respective labels and the rest will be
@@ -75,15 +75,15 @@ totalLabels(70:128) = 0;
 %vector. This may be useful when we attempt different, more complex
 %sampling methods later (e.g. half/half, cross validation etc.)
 
-totalData = [totalLabels.' totalFeatureV]; %128 images in total
+totalData = [totalLabels.' totalFeatureV]; %124 images in total
 
 %% Now we split this overall data into training and testing sets. 
 %For the moment I'll have approx 80% for training and 20% for testing (we can change this later).
 %So we'll put the first 80% face and non-face images in training (first 55 for face and 
-%47 for non-face) and put the rest in testing
+%44 for non-face) and put the rest in testing
 
-trainingSet = [totalData(1:55,:) ; totalData(70:117,:)]; %103 training images
-testingSet = [totalData(56:69,:) ; totalData(118:128,:)]; %25 testing images
+trainingSet = [totalData(1:55,:) ; totalData(70:114,:)]; %100 training images
+testingSet = [totalData(56:69,:) ; totalData(115:124,:)]; %24 testing images
 
 trainingLabels = trainingSet(:,1);
 trainingFeatures = trainingSet(:,2:487);
@@ -114,6 +114,8 @@ for i=70:79
 end
 
 %% Pre-Processing the images with Histogram Equalisation
+% %This visualisation only works well if we haven't preproceed the images yet
+
 % %We can use Histogram Equalisation to enhance the quality of our training
 % %images. We don't require segmentation so histogram equalisation shouldn't
 % %be a problem. Histogram Equalisation is also beneficial from the perspective
@@ -155,54 +157,12 @@ end
 
 %% SVM Visualisation
 
-[U,S,X_reduce] = pca(totalFeatureV,3);
-imean=mean(totalFeatureV,1);
-X_reduce=(totalFeatureV-ones(size(totalFeatureV,1),1)*imean)*U(:,1:3);
-
-figure, hold on
-colours= ['r.'; 'g.'; 'b.'];
-count=0;
-for i=min(totalLabels):max(totalLabels)
-    count = count+1;
-    indexes = find (totalLabels == i);
-    plot3(X_reduce(indexes,1),X_reduce(indexes,2),X_reduce(indexes,3),colours(count,:))
-end
-
-%% SVM Training
-
-%We have the provided SVMtraining model at our disposal. Can use this version
-%or the one in the practicals. There's no real difference just the one in
-%the practical has slightly differently tuned parameters and also controls
-%for the case that a person's matlab version doesn't have a pre installed
-%SVM toolkit
-
-modelSVM = SVMtraining(trainingFeatures, trainingLabels); 
-
-%After calculating the support vectors with our training method, we can draw them in the previous
-%visualisation
-
-hold on
-%transformation to the full image to the best 3 dimensions 
-imean=mean(trainingFeatures,1);
-xsup_pca=(modelSVM.xsup-ones(size(modelSVM.xsup,1),1)*imean)*U(:,1:3);
-% plot support vectors
-h=plot3(xsup_pca(:,1),xsup_pca(:,2),xsup_pca(:,3),'go');
-set(h,'lineWidth',5)
-
-
-%% NN visualisation
-
-% %Below produces a figure which demonstrates with PCA how non-face images
-% %and face images are split in the feature space. Although the small amount
-% %of features here means that there is a poor separation displayed in
-% %the feature space, it's still useful for us to get a rough idea as to 
-% %how separated these two categories are in the feature space
-% 
 % [U,S,X_reduce] = pca(totalFeatureV,3);
+% imean=mean(totalFeatureV,1);
+% X_reduce=(totalFeatureV-ones(size(totalFeatureV,1),1)*imean)*U(:,1:3);
 % 
-% %This is just to help us visualise the difference in the faces images and non-face images. 
-% figure, title("PCA visualising difference between face images and non-face images in the feature space"), hold on
-% colours= ['r.'; 'g.'];
+% figure, hold on
+% colours= ['r.'; 'g.'; 'b.'];
 % count=0;
 % for i=min(totalLabels):max(totalLabels)
 %     count = count+1;
@@ -210,8 +170,50 @@ set(h,'lineWidth',5)
 %     plot3(X_reduce(indexes,1),X_reduce(indexes,2),X_reduce(indexes,3),colours(count,:))
 % end
 % 
-% %% NN Training 
-% modelNN = NNtraining(trainingFeatures, trainingLabels);
+% %% SVM Training
+% 
+% %We have the provided SVMtraining model at our disposal. Can use this version
+% %or the one in the practicals. There's no real difference just the one in
+% %the practical has slightly differently tuned parameters and also controls
+% %for the case that a person's matlab version doesn't have a pre installed
+% %SVM toolkit
+% 
+% modelSVM = SVMtraining(trainingFeatures, trainingLabels); 
+% 
+% %After calculating the support vectors with our training method, we can draw them in the previous
+% %visualisation
+% 
+% hold on
+% %transformation to the full image to the best 3 dimensions 
+% imean=mean(trainingFeatures,1);
+% xsup_pca=(modelSVM.xsup-ones(size(modelSVM.xsup,1),1)*imean)*U(:,1:3);
+% % plot support vectors
+% h=plot3(xsup_pca(:,1),xsup_pca(:,2),xsup_pca(:,3),'go');
+% set(h,'lineWidth',5)
+
+
+%% NN visualisation
+
+%Below produces a figure which demonstrates with PCA how non-face images
+%and face images are split in the feature space. Although the small amount
+%of features here means that there is a poor separation displayed in
+%the feature space, it's still useful for us to get a rough idea as to 
+%how separated these two categories are in the feature space
+
+[U,S,X_reduce] = pca(totalFeatureV,3);
+
+%This is just to help us visualise the difference in the faces images and non-face images. 
+figure, title("PCA visualising difference between face images and non-face images in the feature space"), hold on
+colours= ['r.'; 'g.'];
+count=0;
+for i=min(totalLabels):max(totalLabels)
+    count = count+1;
+    indexes = find (totalLabels == i);
+    plot3(X_reduce(indexes,1),X_reduce(indexes,2),X_reduce(indexes,3),colours(count,:))
+end
+
+%% NN Training 
+modelNN = NNtraining(trainingFeatures, trainingLabels);
 
 % Testing
 for i=1:size(testingFeatures,1)
@@ -220,40 +222,41 @@ for i=1:size(testingFeatures,1)
     
     %% NN model
     %classificationResult(i,1) = NNTesting(testnumber, modelNN);
-    %Accuracy is 0.7600 for NN. With no resampling methods, just manual
+    %Accuracy is 0.75 for NN. With no resampling methods, just manual
     %feature extraction. Weird that it's this way because when it's tested
     %with KNN and K is set to 1 we get an accuracy of 0.6
     
     %% KNN model
     %classificationResult(i,1) = KNNTesting(testnumber, modelNN, 5);
-    %Accuracy is between 0.56 and 6 for different values of K
+    %Accuracy is between 0.58 and 0.62 for different values of K
     
     %% SVM Model
-    classificationResult(i,1) = SVMTesting(testnumber,modelSVM);
-    %Accuracy with no changed parameters is 0.8667
+    %classificationResult(i,1) = SVMTesting(testnumber,modelSVM);
+    %Accuracy with no changed parameters is 0.5. No better than a random
+    %choice model
 
 end
 
 %% This bit is just to record a table for all of the accuracies for varying amounts of K in KNN
 %Could be useful for the report later
 
-% accuracyForEachK(20,2) = 0;
-% accuracyForEachK(:,1) = 1:20;
-% for k = 1:20
-%    
-%     for i = 1:size(testingFeatures,1)
-%         testnumber= testingFeatures(i,:);
-%         classificationResult(i,1) = KNNTesting(testnumber, modelNN, k);
-%     end 
-%     
-%     comparison = (testingLabels==classificationResult);
-%     Accuracy = sum(comparison)/length(comparison);
-%     accuracyForEachK(k,2) = Accuracy; 
-%     %accuracyForEachK is the final table holding the accuracy of the model
-%     %for each value of K from 1:20
-% end
-% 
-% accuracyForEachK
+accuracyForEachK(20,2) = 0;
+accuracyForEachK(:,1) = 1:20;
+for k = 1:20
+   
+    for i = 1:size(testingFeatures,1)
+        testnumber= testingFeatures(i,:);
+        classificationResult(i,1) = KNNTesting(testnumber, modelNN, k);
+    end 
+    
+    comparison = (testingLabels==classificationResult);
+    Accuracy = sum(comparison)/length(comparison);
+    accuracyForEachK(k,2) = Accuracy; 
+    %accuracyForEachK is the final table holding the accuracy of the model
+    %for each value of K from 1:20
+end
+
+accuracyForEachK %Accuracy is between 0.58 and 0.62 for different values of K
 
 %% Evaluation
 
