@@ -30,8 +30,6 @@ for file = files'
     %Hist Equalisation. For the moment it doesn't give us improved results
     
     %faceIm = enhanceContrastALS(uint8(faceIm));
-    %Automatic Linear Stretching. For the moment it doesn't work. Throws
-    %matirx dimension error
     
     faceImages(count, :, :) = faceIm;
 end
@@ -48,7 +46,9 @@ for file = files1'
     count = count + 1;
     nonFaceIm = imread(strcat('./images/non-face/', file.name));
     %nonFaceIm = enhanceContrastHE(uint8(nonFaceIm));
-    %Hist Equalisation. For the moment it doesn't give us improved results
+    %Hist Equalisation. For the moment it doesn't give us improved results.
+    %Might change when we have a larger sample with sampling techniques
+    %like cross-validation later
     %nonFaceIm = enhanceContrastALS(uint8(nonFaceIm));
     %Automatic Linear Stretching. For the moment it doesn't work. Throws
     %matirx dimension error
