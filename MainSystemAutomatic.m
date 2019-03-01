@@ -51,9 +51,28 @@ end
 %% Training models - Gabor features
 %modelNN = NNtraining(gabortrainFeatures, trainLabs);
 
-%Supervised SVM Training
+%1, Supervised SVM Training(devided into train data and test data)
 modelSVM = SVMtraining(gabortrainFeatures, trainLabs);
 
+%2, Building cross-validation model with SVM
+%Features = trainFeatures + testFeatures;
+%modelSVM = CVsvm(Features, trainLabs);
+
+%Find the cross-validated loss of classifier
+%loss = kfoldLoss(modelSVM);
+
+%Estimate accuracy of model
+%Accuracy = 1 - loss;
+
+%3, Building cross-validation model with k-nearest neighbor
+%Features = trainFeatures + testFeatures;
+%modelKNN = CVknn(Features, trainLabs);
+
+%Find the cross-validated loss of classifier
+%loss = kfoldLoss(modelKNN);
+
+%Estimate accuracy of model
+%Accuracy = 1 - loss;
 
 %% Then extracting testing images
 [testFeatures, testLabs] = loadFaceImages('face_test.cdataset', 1);
