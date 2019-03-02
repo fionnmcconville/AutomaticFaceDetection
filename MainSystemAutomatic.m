@@ -19,6 +19,10 @@ addpath .\SVM-KM\
 %Returns a training data size of 670 images from the 94 images in the
 %training dataset.
 
+%Half/half way to divide train and test dataset in average
+%[trainFeatures, testFeatures] = Halfhalf('face_train.cdataset', 'face_test.cdataset');
+
+
 %% Note:
 %We should only change the sampling value of loadFaceImages if we are doing
 %processing later that takes up a lot of time
