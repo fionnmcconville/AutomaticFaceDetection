@@ -37,3 +37,5 @@ svm = fitcsvm(images,labels);
 
 %Build a cross validation model with svm
 model = crossval(svm);
+
+end
