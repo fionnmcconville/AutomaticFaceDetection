@@ -6,3 +6,5 @@ knn = fitcknn(images, labels, 'NumNeighbours', 5);
 
 %Build a cross validation model with knn
 model = crossval(knn);
+
+end
