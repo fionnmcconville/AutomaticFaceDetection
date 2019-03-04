@@ -124,18 +124,24 @@ end
 %     %for each value of K from 1:20
 % end
 % 
-% 
-% accuracyForEachK
+%
+%     %Show accuracy table out in a figure
+% f = uifigure;
+% uitable(f, 'Data', accuracyForEachK);
+%
+%     %Select the highest one as the final accuracy
+%Accuracy = max(accuracyForEachK(:,2);
+
 
 %% Evaluation
 
 % Finally we compared the predicted classification from our mahcine
 % learning algorithm against the real labelling of the testing image
-comparison = (testLabs==classificationResult);
+comparison = (testLabs==classificationResult)
 
 %Accuracy is the most common metric. It is defiend as the number of
 %correctly classified samples/ the total number of tested samples
-Accuracy = sum(comparison)/length(comparison)
+Accuracy = sum(comparison)/length(comparison);
 
 
 %We display all of the correctly classified images. (Max is around 25)
