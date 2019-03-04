@@ -19,9 +19,6 @@ addpath .\SVM-KM\
 %Returns a training data size of 670 images from the 94 images in the
 %training dataset.
 
-%Half/half way to divide train and test dataset in average
-%[trainFeatures, testFeatures] = Halfhalf('face_train.cdataset', 'face_test.cdataset');
-
 
 %% Note:
 %We should only change the sampling value of loadFaceImages if we are doing
@@ -45,38 +42,7 @@ for i = 1:size(trainFeatures, 1)
     Im = gabor_feature_vector(Im); %Produces 19,440 features 
     gabortrainFeatures(i,:) = Im;
 end
-%% Training models - Full images
-%Supervised Nearest Neighbour Training
-%modelNN = NNtraining(trainFeatures, trainLabs);
 
-%Supervised SVM Training
-%modelSVM = SVMtraining(trainFeatures, trainLabs);
-
-%% Training models - Gabor features
-%modelNN = NNtraining(gabortrainFeatures, trainLabs);
-
-%1, Supervised SVM Training(devided into train data and test data)
-modelSVM = SVMtraining(gabortrainFeatures, trainLabs);
-
-%2, Building cross-validation model with SVM
-%Features = trainFeatures + testFeatures;
-%modelSVM = CVsvm(Features, trainLabs);
-
-%Find the cross-validated loss of classifier
-%loss = kfoldLoss(modelSVM);
-
-%Estimate accuracy of model
-%Accuracy = 1 - loss;
-
-%3, Building cross-validation model with k-nearest neighbor
-%Features = trainFeatures + testFeatures;
-%modelKNN = CVknn(Features, trainLabs);
-
-%Find the cross-validated loss of classifier
-%loss = kfoldLoss(modelKNN);
-
-%Estimate accuracy of model
-%Accuracy = 1 - loss;
 
 %% Then extracting testing images
 [testFeatures, testLabs] = loadFaceImages('face_test.cdataset', 1);
@@ -99,6 +65,21 @@ for i = 1:size(testFeatures, 1)
     Im = gabor_feature_vector(Im); %Produces 19,440 features 
     gabortestFeatures(i,:) = Im;
 end
+
+%Half/half way to divide train and test dataset equally
+[gabortrainFeatures, gabortestFeatures] = Halfhalf(gabortrainFeatures, gabortestFeatures, trainLabs, testLabs);
+%% Training models - Full images
+%Supervised Nearest Neighbour Training
+%modelNN = NNtraining(trainFeatures, trainLabs);
+
+%Supervised SVM Training
+%modelSVM = SVMtraining(trainFeatures, trainLabs);
+
+%% Training models - Gabor features
+%modelNN = NNtraining(gabortrainFeatures, trainLabs);
+
+% Supervised SVM Training(devided into train data and test data)
+modelSVM = SVMtraining(gabortrainFeatures, trainLabs);
 
 %% Testing model
 for i=1:size(testFeatures,1)
