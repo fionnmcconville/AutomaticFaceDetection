@@ -212,6 +212,21 @@ for i=min(totalLabels):max(totalLabels)
     plot3(X_reduce(indexes,1),X_reduce(indexes,2),X_reduce(indexes,3),colours(count,:))
 end
 
+
+%%1
+%Half/half way to divide train and test dataset equally
+%[trainingFeatures, testingFeatures, trainingLabels, testingLabels] = Halfhalf(trainingFeatures, testingFeatures, trainingLabels, testingLabels, testLabs);
+
+%%2
+%Cross-validation way to classify the features
+%This is a munual way to execute cross-validation
+%The newest test features are selected out randomly in every fold
+%choose test Features in every fold randomly
+%n equal the fold number
+n = 100;
+[trainingFeatures, testingFeatures, trainingLabels, testingLabels] = CrossValidation(trainingFeatures, testingFeatures, trainingLabels, testingLabels, n);
+
+
 %% NN Training 
 modelNN = NNtraining(trainingFeatures, trainingLabels);
 
@@ -256,7 +271,10 @@ for k = 1:20
     %for each value of K from 1:20
 end
 
-accuracyForEachK %Accuracy is between 0.58 and 0.62 for different values of K
+%accuracyForEachK %Accuracy is between 0.58 and 0.62 for different values of K
+%Show accuracy table out in a figure
+ f = uifigure;
+ uitable(f, 'Data', accuracyForEachK);
 
 %% Evaluation
 
