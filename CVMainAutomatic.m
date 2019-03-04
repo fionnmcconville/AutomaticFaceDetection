@@ -101,7 +101,7 @@ Features = gabortrainFeatures + gabortestFeatures;
 accuracy = [];
 k_number_knn = [];
 
-for i = 1:10
+for i = 1:20
 modelKNN = CVknn(Features, trainLabs, i);
 
 %Find the cross-validated loss of classifier
@@ -119,3 +119,7 @@ knn_Accuracy_on_different_number_of_k = table(k_number_knn, accuracy);
 
 f = uifigure;
 uitable(f, 'Data', knn_Accuracy_on_different_number_of_k);
+
+%Select out the highest accuracy
+Accuracy = max(accuracy);
+
