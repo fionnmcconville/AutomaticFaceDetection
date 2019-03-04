@@ -66,8 +66,19 @@ for i = 1:size(testFeatures, 1)
     gabortestFeatures(i,:) = Im;
 end
 
+%%1
 %Half/half way to divide train and test dataset equally
-[gabortrainFeatures, gabortestFeatures] = Halfhalf(gabortrainFeatures, gabortestFeatures, trainLabs, testLabs);
+%[gabortrainFeatures, gabortestFeatures,trainLabs, testLabs] = Halfhalf(gabortrainFeatures, gabortestFeatures, trainLabs, testLabs);
+
+%%2
+%Cross-validation way to classify the features
+%This is a munual way to execute cross-validation
+%The newest test features are selected out randomly in every fold
+%choose test Features in every fold randomly
+%n equal the fold number
+n = 100;
+[gabortrainFeatures, gabortestFeatures, trainLabs, testLabs] = CrossValidation(gabortrainFeatures, gabortestFeatures, trainLabs, testLabs, n);
+
 %% Training models - Full images
 %Supervised Nearest Neighbour Training
 %modelNN = NNtraining(trainFeatures, trainLabs);
@@ -128,9 +139,7 @@ end
 %     %Show accuracy table out in a figure
 % f = uifigure;
 % uitable(f, 'Data', accuracyForEachK);
-%
-%     %Select the highest one as the final accuracy
-%Accuracy = max(accuracyForEachK(:,2);
+
 
 
 %% Evaluation
@@ -142,7 +151,6 @@ comparison = (testLabs==classificationResult)
 %Accuracy is the most common metric. It is defiend as the number of
 %correctly classified samples/ the total number of tested samples
 Accuracy = sum(comparison)/length(comparison);
-
 
 %We display all of the correctly classified images. (Max is around 25)
 figure, 
