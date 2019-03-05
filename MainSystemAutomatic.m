@@ -90,10 +90,10 @@ n = 100;
 %modelNN = NNtraining(gabortrainFeatures, trainLabs);
 
 % Supervised SVM Training(devided into train data and test data)
-modelSVM = SVMtraining(gabortrainFeatures, trainLabs);
+modelSVM = SVMTraining(gabortrainFeatures, trainLabs);
 
 %% Testing model
-for i=1:size(testFeatures,1)
+for i=1:size(gabortestFeatures,1)
     
     %testnumber= testFeatures(i,:); % For full image feature descriptor
     
