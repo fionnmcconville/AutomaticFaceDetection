@@ -24,18 +24,20 @@ num_test = int16(percentage*n(1,1));
 %Create a set to store indices of new test Features in total Features set
 test_loc_set = randperm(n(1,1), num_test);
 
-%Sort elements in test_indice to be ascending 
+%Sort elements in test_index to be ascending 
 test_loc_set = sort(test_loc_set);
 
-%Indice point to current location of test Features in total Features set using random number
-test_indice = 1;
+%Indix point to current location of test Features in total Features set using random number
+test_index = 1;
 
 %Divided Features into train and test set in average and in random
 for i = 1:n(1,1)
-    if(test_loc_set(:,test_indice)==i)
+    if(test_loc_set(:,test_index)==i)
         testFeatures = [testFeatures;Features(i,:)];
         testLabs = [testLabs;Labs(i,:)];
-        test_indice = test_indice + 1;
+        if(test_index < num_test)
+        test_index = test_index + 1;
+        end
     else
         trainFeatures = [trainFeatures;Features(i,:)];
         trainLabs = [trainLabs;Labs(i,:)];
