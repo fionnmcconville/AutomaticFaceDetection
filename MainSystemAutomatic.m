@@ -1,74 +1,224 @@
 clear all
 close all
 
-addpath .\SVM-KM\ 
-%In order to use the provided SVM toolbox. We must add the path to the toolbox folder. 
-%This folder is in prac 5
+%% For loadFaceImages
 
+%If we use, we should only have the sampling at 1 so we can use as much training data as
+%possible. Only alter this if we are doing a processing method which takes
+%a long time. This is the easy way to extract feature vectors from the image but we'll use the
+%manual version for now because it may give us more flexibility, with pre-processing images (HistEq) 
+%and sampling (for example if we want to train with 80% of the images and test
+%with 20%. With the loadFaceImages function the testing and training samples images are predetermined.
 
-%% Easiest and most basic method of feature extraction and sampling for training and testing data.
-%Might be useful to compare accuracy of basic method with attempts of
-%improving later. For the moment this method of sampling is better because the
-%loadFaceImages method has an inbuilt data augmentation functionality which
-%uses various methods to increase the size of the dataset. Maybe later we
-%will learn these methods in the course and be able to use them in our
-%manual setup. Maybe the manual setup isn't necessary. For now though this gives the optimum accuracy
+%TL:DR This is the automatic method of feature vector extraction. See MainSystemAutomatic for a better explanation
+%[features, labs] = loadFaceImages('face_train.cdataset', 1); 
 
-%% First extracting training images
-[trainFeatures, trainLabs] = loadFaceImages('face_train.cdataset', 1);
-%Returns a training data size of 670 images from the 94 images in the
-%training dataset.
+%% Below is a manual way to do feature extraction.
+%It's could be more useful as it allows us to pre-process the images and choose the sampling method manually,
+%rather than rely on the arbitrary sampling in the loadFaceImages function
 
-
-%% Note:
-%We should only change the sampling value of loadFaceImages if we are doing
-%processing later that takes up a lot of time
-
-%% Gabor features - Training feature descriptor
-%Converting trainfeatures data to images where they can be preprocessed and
-%also gabor features function can be implemented
-gabortrainFeatures = zeros(670, 19440);
-for i = 1:size(trainFeatures, 1)
-    Im = reshape(trainFeatures(i,:),27,18);
+%% Full image feature descriptor - Manual Feature Extraction
+faceImages = zeros(69,27,18); % initialise 2D array to hold 69 27x18 images 
+path = './images/face/*.png';
+files = dir(path);
+count = 0;
+for file = files'
+    count = count + 1;
+    faceIm = imread(strcat('./images/face/', file.name));
     
-    Im = enhanceContrastHE(uint8(Im));
-    %Hist Equalisation. Gives us a large improvement when used with gabor.
-    %Accuracy is 0.9042
-    
-    %Im = enhanceContrastALS(uint8(Im));
-    %Automatic Linear stretching. Gives us an improvement when used with gabor.
-    %Accuracy is 0.8292
-        
-    Im = gabor_feature_vector(Im); %Produces 19,440 features 
-    gabortrainFeatures(i,:) = Im;
-end
-
-
-%% Then extracting testing images
-[testFeatures, testLabs] = loadFaceImages('face_test.cdataset', 1);
-%Returns a testing data size of 240 from the 30 images in the
-%testing dataset
-
-%% Gabor features - Testing feature descriptor - Comment out if using another feature method
-%Converting trainfeatures data to images where they can be preprocessed and
-%also gabor features function can be implemented
-gabortestFeatures = zeros(240, 19440);
-for i = 1:size(testFeatures, 1)
-    Im = reshape(testFeatures(i,:),27,18);
-    
-    Im = enhanceContrastHE(uint8(Im));
+    %faceIm = enhanceContrastHE(uint8(faceIm));
     %Hist Equalisation. For the moment it doesn't give us improved results
     
-    %Im = enhanceContrastALS(uint8(Im));
+    %faceIm = enhanceContrastALS(uint8(faceIm));
     %Automatic Linear stretching. For the moment it doesn't give us improved results
-        
-    Im = gabor_feature_vector(Im); %Produces 19,440 features 
-    gabortestFeatures(i,:) = Im;
+    faceImages(count, :, :) = faceIm;
+end
+%faceFeatures is now an array of face images
+faceFeatures = reshape(faceImages, 69, 486);
+%The above will create an array of 69 images with 486 pixels as a feature
+%vector
+
+nonFaceImages = zeros(55,27,18); % initialise 2D array to hold 55 27x18 images 
+path1 = './images/non-face/*.png';
+files1 = dir(path1);
+count = 0;
+for file = files1'
+    count = count + 1;
+    nonFaceIm = imread(strcat('./images/non-face/', file.name));
+    %nonFaceIm = enhanceContrastHE(uint8(nonFaceIm));
+    %Hist Equalisation. For the moment it doesn't give us improved results.
+    %Might change when we have a larger sample with sampling techniques
+    %like cross-validation later
+    %nonFaceIm = enhanceContrastALS(uint8(nonFaceIm));
+    %Automatic Linear Stretching. For the moment it doesn't work. Throws
+    %matirx dimension error
+    nonFaceImages(count,:, :) = nonFaceIm;
+end
+%nonFaceFeatures is now an array of face images. The array order will not
+%necessarily correspond to the numbering of the files in the directory
+nonFaceFeatures = reshape(nonFaceImages, 55, 486);
+
+%Now we combine the feature vectors for the 69 raw face images and the 59 raw non-face
+%images into one overall structure. 
+totalFeatureV = [faceFeatures(:,:); nonFaceFeatures(:,:)]; 
+
+
+%Label is 1 for face images and 0 for non-face images.
+totalLabels(1:69) = 1;
+totalLabels(70:124) = 0;
+
+%Now we create a dataset which contains the totality of all the images. The
+%first column will be each image's respective labels and the rest will be
+%the feature vector which we'll do the machine learning on. We're doing
+%this so when we split the data into training and testing samples we can
+%keep consistent the labels corresponding to the appropriate feature
+%vector. This may be useful when we attempt different, more complex
+%sampling methods later (e.g. half/half, cross validation etc.)
+
+totalData = [totalLabels.' totalFeatureV]; %124 images in total
+
+%% Now we split this overall data into training and testing sets. 
+%For the moment I'll have approx 80% for training and 20% for testing (we can change this later).
+%So we'll put the first 80% face and non-face images in training (first 55 for face and 
+%44 for non-face) and put the rest in testing
+
+trainingSet = [totalData(1:55,:) ; totalData(70:114,:)]; %100 training images
+testingSet = [totalData(56:69,:) ; totalData(115:124,:)]; %24 testing images
+
+trainingLabels = trainingSet(:,1);
+trainingFeatures = trainingSet(:,2:487);
+
+testingLabels = testingSet(:,1);
+testingFeatures = testingSet(:,2:487);
+
+%% For visualization purposes, we display the first 10 face images
+figure,
+colormap(gray),
+sgtitle("Displaying the first 10 Face images. Not Pre-Processed"),
+for i=1:10
+
+    
+    Im = reshape(totalData(i,2:487),27,18);
+    subplot(2,5,i), imagesc(Im), title(['label: ',labelToDescription(totalData(i,1))])
+    axis off
+    
+end
+%% We also display the first 10 non-face images
+figure,
+colormap(gray),
+sgtitle("Displaying the first 10 non-face images. Not Pre-Processed"),
+for i=70:79 
+    Im = reshape(totalData(i,2:487),27,18);
+    subplot(2,5,i-69), imagesc(Im), title(['label: ',labelToDescription(totalData(i,1))]) 
+    axis off
 end
 
+%% Pre-Processing the images with Histogram Equalisation
+% %This visualisation only works well if we haven't preproceed the images yet
+
+% %We can use Histogram Equalisation to enhance the quality of our training
+% %images. We don't require segmentation so histogram equalisation shouldn't
+% %be a problem. Histogram Equalisation is also beneficial from the perspective
+% %that parameters don't need to be tuned
+% 
+% % Noise filtering is a bad idea, whether it's median filter or a low pass
+% % filter. Too much loss of detail plus the images have too small dimensions
+% % for noise filtering. Each pixel is too important to get wrong
+% 
+% figure,
+% colormap(gray),
+% sgtitle("Comparing the first 5 face images. Not Pre-Processed vs Pre-Processed"),
+% for i=1:5
+% 
+%     
+%     Im = reshape(totalData(i,2:487),27,18);
+%     OpIm = enhanceContrastHE(uint8(Im));
+%     subplot(2,5,i), imagesc(Im), title(['label: ',labelToDescription(totalData(i,1))])
+%     subplot(2,5,i+5), imagesc(OpIm), title('Pre-Processed')
+%     axis off
+%     
+% end
+% 
+% figure,
+% colormap(gray),
+% sgtitle("Comparing the first 5 face images. Not Pre-Processed vs Pre-Processed"),
+% for i=70:74 
+%     Im = reshape(totalData(i,2:487),27,18);
+%     OpIm = enhanceContrastHE(uint8(Im));
+%     subplot(2,5,i-69), imagesc(Im), title(['label: ',labelToDescription(totalData(i,1))])
+%     subplot(2,5,i-64), imagesc(OpIm), title('Pre-Processed')
+%     axis off
+% end
+
+
+%% Note: 
+%Comment out either NN or SVM related section depending on what method
+%you're using on the script run. These sections are clearly marked
+
+%% SVM Visualisation
+
+% [U,S,X_reduce] = pca(totalFeatureV,3);
+% imean=mean(totalFeatureV,1);
+% X_reduce=(totalFeatureV-ones(size(totalFeatureV,1),1)*imean)*U(:,1:3);
+% 
+% figure, hold on
+% colours= ['r.'; 'g.'; 'b.'];
+% count=0;
+% for i=min(totalLabels):max(totalLabels)
+%     count = count+1;
+%     indexes = find (totalLabels == i);
+%     plot3(X_reduce(indexes,1),X_reduce(indexes,2),X_reduce(indexes,3),colours(count,:))
+% end
+% 
+% %% SVM Training
+% 
+% %We have the provided SVMtraining model at our disposal. Can use this version
+% %or the one in the practicals. There's no real difference just the one in
+% %the practical has slightly differently tuned parameters and also controls
+% %for the case that a person's matlab version doesn't have a pre installed
+% %SVM toolkit
+% 
+% modelSVM = SVMtraining(trainingFeatures, trainingLabels); 
+% 
+% %After calculating the support vectors with our training method, we can draw them in the previous
+% %visualisation
+% 
+% hold on
+% %transformation to the full image to the best 3 dimensions 
+% imean=mean(trainingFeatures,1);
+% xsup_pca=(modelSVM.xsup-ones(size(modelSVM.xsup,1),1)*imean)*U(:,1:3);
+% % plot support vectors
+% h=plot3(xsup_pca(:,1),xsup_pca(:,2),xsup_pca(:,3),'go');
+% set(h,'lineWidth',5)
+
+
+%% NN visualisation
+
+%Below produces a figure which demonstrates with PCA how non-face images
+%and face images are split in the feature space. Although the small amount
+%of features here means that there is a poor separation displayed in
+%the feature space, it's still useful for us to get a rough idea as to 
+%how separated these two categories are in the feature space
+
+[U,S,X_reduce] = pca(totalFeatureV,3);
+
+%This is just to help us visualise the difference in the faces images and non-face images. 
+figure, title("PCA visualising difference between face images and non-face images in the feature space"), hold on
+colours= ['r.'; 'g.'];
+count=0;
+for i=min(totalLabels):max(totalLabels)
+    count = count+1;
+    indexes = find (totalLabels == i);
+    plot3(X_reduce(indexes,1),X_reduce(indexes,2),X_reduce(indexes,3),colours(count,:))
+end
+
+
 %%1
-%Half/half way to divide train and test dataset equally
-%[gabortrainFeatures, gabortestFeatures,trainLabs, testLabs] = Halfhalf(gabortrainFeatures, gabortestFeatures, trainLabs, testLabs);
+%Half/half way to divide train and test Features equally
+%Percentage is the occupation of test Features in all Features
+%0.5 is default(Half/half), and you can modify it to be another value
+percentage = 0.5;
+[trainingFeatures, testingFeatures, trainingLabels, testingLabels] = Halfhalf(trainingFeatures, testingFeatures, trainingLabels, testingLabels, percentage);
 
 %%2
 %Cross-validation way to classify the features
@@ -76,83 +226,70 @@ end
 %The newest test features are selected out randomly in every fold
 %choose test Features in every fold randomly
 %n equal the fold number
-n = 100;
-[gabortrainFeatures, gabortestFeatures, trainLabs, testLabs] = CrossValidation(gabortrainFeatures, gabortestFeatures, trainLabs, testLabs, n);
+%n = 30;
+%[trainingFeatures, testingFeatures, trainingLabels, testingLabels] = CrossValidation(trainingFeatures, testingFeatures, trainingLabels, testingLabels, n);
 
-%% Training models - Full images
-%Supervised Nearest Neighbour Training
-%modelNN = NNtraining(trainFeatures, trainLabs);
+%% NN Training 
+modelNN = NNtraining(trainingFeatures, trainingLabels);
 
-%Supervised SVM Training
-%modelSVM = SVMtraining(trainFeatures, trainLabs);
-
-%% Training models - Gabor features
-%modelNN = NNtraining(gabortrainFeatures, trainLabs);
-
-% Supervised SVM Training(devided into train data and test data)
-modelSVM = SVMTraining(gabortrainFeatures, trainLabs);
-
-%% Testing model
-for i=1:size(gabortestFeatures,1)
+% Testing
+for i=1:size(testingFeatures,1)
     
-    %testnumber= testFeatures(i,:); % For full image feature descriptor
+    testnumber= testingFeatures(i,:);
     
-    testnumber= gabortestFeatures(i,:); % For gabor feature descriptor
-
     %% NN model
     %classificationResult(i,1) = NNTesting(testnumber, modelNN);
-    %Accuracy is 0.5083. Which is again strange. Gives a reverse of what
-    %happened in the manual system. With k = 1 in the KNNTesting the
-    %accuracy is around 0.7
+    %Accuracy is 0.75 for NN. With no resampling methods, just manual
+    %feature extraction. Weird that it's this way because when it's tested
+    %with KNN and K is set to 1 we get an accuracy of 0.6
     
     %% KNN model
-    %classificationResult(i,1) = KNNTesting(testnumber, modelNN, 4);
+    %classificationResult(i,1) = KNNTesting(testnumber, modelNN, 5);
+    %Accuracy is between 0.58 and 0.62 for different values of K
     
     %% SVM Model
-    classificationResult(i,1) = SVMTesting(testnumber,modelSVM);
-    %SVM accuracy with no changed parameters and full image feature desc is 0.7083
-    %SVM accuracy with no changed parameters, hist equalisation
-    %and gabor feature desc is 0.9042
+    %classificationResult(i,1) = SVMTesting(testnumber,modelSVM);
+    %Accuracy with no changed parameters is 0.5. No better than a random
+    %choice model
 
 end
 
 %% This bit is just to record a table for all of the accuracies for varying amounts of K in KNN
 %Could be useful for the report later
 
-% accuracyForEachK(20,2) = 0;
-% accuracyForEachK(:,1) = 1:20;
-% for k = 1:20
-%    
-%     for i = 1:size(testFeatures,1)
-%         testnumber= testFeatures(i,:);
-%         classificationResult(i,1) = KNNTesting(testnumber, modelNN, k);
-%     end 
-%     
-%     comparison = (testLabs==classificationResult);
-%     Accuracy = sum(comparison)/length(comparison);
-%     accuracyForEachK(k,2) = Accuracy; 
-%     %accuracyForEachK is the final table holding the accuracy of the model
-%     %for each value of K from 1:20
-% end
-% 
-%
-%     %Show accuracy table out in a figure
-% f = uifigure;
-% uitable(f, 'Data', accuracyForEachK);
+accuracyForEachK(20,2) = 0;
+accuracyForEachK(:,1) = 1:20;
+for k = 1:20
+   
+    for i = 1:size(testingFeatures,1)
+        testnumber= testingFeatures(i,:);
+        classificationResult(i,1) = KNNTesting(testnumber, modelNN, k);
+    end 
+    
+    comparison = (testingLabels==classificationResult);
+    Accuracy = sum(comparison)/length(comparison);
+    accuracyForEachK(k,2) = Accuracy; 
+    %accuracyForEachK is the final table holding the accuracy of the model
+    %for each value of K from 1:20
+end
 
-
+%accuracyForEachK %Accuracy is between 0.58 and 0.62 for different values of K
+%Show accuracy table out in a figure
+ f = uifigure;
+ uitable(f, 'Data', accuracyForEachK);
 
 %% Evaluation
 
 % Finally we compared the predicted classification from our mahcine
 % learning algorithm against the real labelling of the testing image
-comparison = (testLabs==classificationResult)
+comparison = (testingLabels==classificationResult);
 
 %Accuracy is the most common metric. It is defiend as the number of
 %correctly classified samples/ the total number of tested samples
 Accuracy = sum(comparison)/length(comparison)
 
-%We display all of the correctly classified images. (Max is around 25)
+
+%% We display at most 25 of the correctly classified images
 figure, 
 sgtitle('Correct Classification'),
 colormap(gray)
@@ -163,7 +300,7 @@ while (count<25)&&(i<=length(comparison))
     if comparison(i)
         count=count+1;
         subplot(5,5,count)
-        Im = reshape(testFeatures(i,:),27,18);
+        Im = reshape(testingFeatures(i,:),27,18);
         imagesc(Im)
         axis off
     end
@@ -173,7 +310,7 @@ while (count<25)&&(i<=length(comparison))
 end
 
 
-%We display all of the incorrectly classified images. (Max is around 25)
+%% We display at most 25 of the incorrectly classified images
 figure
 sgtitle('Wrong Classification'),
 colormap(gray)
@@ -184,7 +321,7 @@ while (count<25)&&(i<=length(comparison))
     if ~comparison(i)
         count=count+1;
         subplot(5,5,count)
-        Im = reshape(testFeatures(i,:),27,18);
+        Im = reshape(testingFeatures(i,:),27,18);
         imagesc(Im)
         title(labelToDescription(classificationResult(i)))
         axis off
@@ -193,3 +330,4 @@ while (count<25)&&(i<=length(comparison))
     i=i+1;
     
 end
+
