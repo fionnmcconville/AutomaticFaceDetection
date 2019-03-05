@@ -214,8 +214,11 @@ end
 
 
 %%1
-%Half/half way to divide train and test dataset equally
-%[trainingFeatures, testingFeatures, trainingLabels, testingLabels] = Halfhalf(trainingFeatures, testingFeatures, trainingLabels, testingLabels, testLabs);
+%Half/half way to divide train and test Features equally
+%Percentage is the occupation of test Features in all Features
+%0.5 is default(Half/half), and you can modify it to be another value
+percentage = 0.5;
+[trainingFeatures, testingFeatures, trainingLabels, testingLabels] = Halfhalf(trainingFeatures, testingFeatures, trainingLabels, testingLabels, percentage);
 
 %%2
 %Cross-validation way to classify the features
@@ -223,9 +226,8 @@ end
 %The newest test features are selected out randomly in every fold
 %choose test Features in every fold randomly
 %n equal the fold number
-n = 30;
-[trainingFeatures, testingFeatures, trainingLabels, testingLabels] = CrossValidation(trainingFeatures, testingFeatures, trainingLabels, testingLabels, n);
-
+%n = 30;
+%[trainingFeatures, testingFeatures, trainingLabels, testingLabels] = CrossValidation(trainingFeatures, testingFeatures, trainingLabels, testingLabels, n);
 
 %% NN Training 
 modelNN = NNtraining(trainingFeatures, trainingLabels);
@@ -328,3 +330,4 @@ while (count<25)&&(i<=length(comparison))
     i=i+1;
     
 end
+
