@@ -150,7 +150,7 @@ comparison = (testLabs==classificationResult)
 
 %Accuracy is the most common metric. It is defiend as the number of
 %correctly classified samples/ the total number of tested samples
-Accuracy = sum(comparison)/length(comparison);
+Accuracy = sum(comparison)/length(comparison)
 
 %We display all of the correctly classified images. (Max is around 25)
 figure, 
