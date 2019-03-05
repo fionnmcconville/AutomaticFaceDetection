@@ -223,7 +223,7 @@ end
 %The newest test features are selected out randomly in every fold
 %choose test Features in every fold randomly
 %n equal the fold number
-n = 100;
+n = 30;
 [trainingFeatures, testingFeatures, trainingLabels, testingLabels] = CrossValidation(trainingFeatures, testingFeatures, trainingLabels, testingLabels, n);
 
 
