@@ -6,81 +6,91 @@ addpath .\SVM-KM\
 %This folder is in prac 5
 
 
-%% Easiest and most basic method of feature extraction and sampling for training and testing data.
-%Might be useful to compare accuracy of basic method with attempts of
-%improving later. For the moment this method of sampling is better because the
-%loadFaceImages method has an inbuilt data augmentation functionality which
-%uses various methods to increase the size of the dataset. Maybe later we
-%will learn these methods in the course and be able to use them in our
-%manual setup. Maybe the manual setup isn't necessary. For now though this gives the optimum accuracy
+%% We extract both databases and pass them through a sampling method
+% (either half/half or cross validation) in order to get a random sample
 
-%% First extracting training images
-[trainFeatures, trainLabs] = loadFaceImages('face_train.cdataset', 1);
-%Returns a training data size of 670 images from the 94 images in the
-%training dataset.
-
-
-%% Note:
 %We should only change the sampling value of loadFaceImages if we are doing
 %processing later that takes up a lot of time
+[trainFeatures, trainLabs] = loadFaceImages('face_train.cdataset', 1);
+[testFeatures, testLabs] = loadFaceImages('face_test.cdataset', 1);
+
+
+
+%% 1: Half/half way to divide train and test dataset equally
+%[trainFeatures, testFeatures,trainLabs, testLabs] = Halfhalf(trainFeatures, testFeatures, trainLabs, testLabs);
+
+
+%% 2: Cross-validation way to classify the features
+%This is a manual way to execute cross-validation. The newest test features are selected out randomly
+%in every fold. Function chooses test sample in every fold randomly
+n = 20; %n equal the fold number
+[trainFeatures, testFeatures, trainLabs, testLabs] = CrossValidation(trainFeatures, testFeatures, trainLabs, testLabs, n);
+
+
+%% Augmenting images so we multiply our dataset by 10. (We get 10 slightly different versions of image)
+%We have turned off the augmentation option in the loadFaceImages dataset
+%as we need to randomly each image, put them in their respective category
+%(training or testing) and THEN we can augment the images. If we do this
+%before we cross validate then we will get an over-optimistic accuracy
+%returned on our model
+[trainFeatures, trainLabs] = augmentImages(trainFeatures, trainLabs); % For training
+
+[testFeatures, testLabs] = augmentImages(testFeatures, testLabs); %For testing
+
+testSize = size(testFeatures, 1);
+trainSize = size(trainFeatures, 1);
+numFeatures = size(trainFeatures,2);
+
+%% Lets check if augmentation worked ok
+% figure,
+% colormap(gray),
+% sgtitle("Displaying the first 10 augmented training images"),
+% for i=1:10
+% 
+%     Im = squeeze(trainFeatures(i,:,:)); 
+%     I = reshape(Im,27,18);
+%     subplot(2,5,i), imagesc(I), title(['label: ',labelToDescription(trainLabs(i,1))])
+%     axis off
+% end
 
 %% Gabor features - Training feature descriptor
 %Converting trainfeatures data to images where they can be preprocessed and
 %also gabor features function can be implemented
-gabortrainFeatures = zeros(670, 19440);
-for i = 1:size(trainFeatures, 1)
+
+gabortrainFeatures = zeros(trainSize, numFeatures * 40);
+for i = 1:trainSize
     Im = reshape(trainFeatures(i,:),27,18);
     
-    Im = enhanceContrastHE(uint8(Im));
+    %Im = enhanceContrastHE(uint8(Im));
     %Hist Equalisation. Gives us a large improvement when used with gabor.
-    %Accuracy is 0.9042
+    %Accuracy is 0.92 - 0.93
     
-    %Im = enhanceContrastALS(uint8(Im));
+    Im = enhanceContrastALS(uint8(Im));
     %Automatic Linear stretching. Gives us an improvement when used with gabor.
-    %Accuracy is 0.8292
+    %Accuracy is ~ 0.95
         
-    Im = gabor_feature_vector(Im); %Produces 19,440 features 
+    Im = gabor_feature_vector(uint8(Im)); %Produces 19,440 features 
     gabortrainFeatures(i,:) = Im;
 end
-
-
-%% Then extracting testing images
-[testFeatures, testLabs] = loadFaceImages('face_test.cdataset', 1);
-%Returns a testing data size of 240 from the 30 images in the
-%testing dataset
 
 %% Gabor features - Testing feature descriptor - Comment out if using another feature method
 %Converting trainfeatures data to images where they can be preprocessed and
 %also gabor features function can be implemented
-gabortestFeatures = zeros(240, 19440);
-for i = 1:size(testFeatures, 1)
+gabortestFeatures = zeros(testSize, numFeatures * 40);
+for i = 1:testSize
     Im = reshape(testFeatures(i,:),27,18);
     
-    Im = enhanceContrastHE(uint8(Im));
-    %Hist Equalisation. For the moment it doesn't give us improved results
+    %Im = enhanceContrastHE(uint8(Im));
+    %Hist Equalisation. 
     
-    %Im = enhanceContrastALS(uint8(Im));
-    %Automatic Linear stretching. For the moment it doesn't give us improved results
+    Im = enhanceContrastALS(uint8(Im));
+    %Automatic Linear stretching. 
         
-    Im = gabor_feature_vector(Im); %Produces 19,440 features 
+    Im = gabor_feature_vector(uint8(Im)); %Produces 19,440 features 
     gabortestFeatures(i,:) = Im;
 end
 
-%%1
-%Half/half way to divide train and test Features equally
-%Percentage is the occupation of test Features in all Features
-%0.5 is default(Half/half), and you can modify it to be another value
-%percentage = 0.5;
-%[gabortrainFeatures, gabortestFeatures, trainLabs, testLabs] = Halfhalf(gabortrainFeatures, gabortestFeatures, trainLabs, testLabs, percentage);
 
-%%2
-%Cross-validation way to classify the features
-%This is a munual way to execute cross-validation
-%The newest test features are selected out randomly in every fold
-%choose test Features in every fold randomly
-%n equal the fold number
-n = 100;
-[gabortrainFeatures, gabortestFeatures, trainLabs, testLabs] = CrossValidation(gabortrainFeatures, gabortestFeatures, trainLabs, testLabs, n);
 
 %% Training models - Full images
 %Supervised Nearest Neighbour Training
@@ -93,10 +103,12 @@ n = 100;
 %modelNN = NNtraining(gabortrainFeatures, trainLabs);
 
 % Supervised SVM Training(devided into train data and test data)
-modelSVM = SVMTraining(gabortrainFeatures, trainLabs);
+modelSVM = SVMtraining(gabortrainFeatures, trainLabs);
+
 
 %% Testing model
-for i=1:size(gabortestFeatures,1)
+
+for i=1:testSize 
     
     %testnumber= testFeatures(i,:); % For full image feature descriptor
     
@@ -126,8 +138,10 @@ end
 % accuracyForEachK(:,1) = 1:20;
 % for k = 1:20
 %    
-%     for i = 1:size(testFeatures,1)
-%         testnumber= testFeatures(i,:);
+%     %for i = 1:size(testFeatures,1)
+%         %testnumber= testFeatures(i,:); %For full image
+%      for i = 1:size(gabortestFeatures,1)
+%         testnumber= gabortestFeatures(i,:); % For gabor feature descriptor
 %         classificationResult(i,1) = KNNTesting(testnumber, modelNN, k);
 %     end 
 %     
@@ -138,7 +152,7 @@ end
 %     %for each value of K from 1:20
 % end
 % 
-%
+% 
 %     %Show accuracy table out in a figure
 % f = uifigure;
 % uitable(f, 'Data', accuracyForEachK);
@@ -149,7 +163,7 @@ end
 
 % Finally we compared the predicted classification from our mahcine
 % learning algorithm against the real labelling of the testing image
-comparison = (testLabs==classificationResult)
+comparison = (testLabs==classificationResult);
 
 %Accuracy is the most common metric. It is defiend as the number of
 %correctly classified samples/ the total number of tested samples
@@ -196,3 +210,5 @@ while (count<25)&&(i<=length(comparison))
     i=i+1;
     
 end
+
+
