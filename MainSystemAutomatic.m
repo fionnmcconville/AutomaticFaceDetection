@@ -159,11 +159,12 @@ end
 
 
 
-%% Evaluation
+%% Evaluation - Accuracy
 
 % Finally we compared the predicted classification from our mahcine
 % learning algorithm against the real labelling of the testing image
 comparison = (testLabs==classificationResult);
+
 
 %Accuracy is the most common metric. It is defiend as the number of
 %correctly classified samples/ the total number of tested samples
@@ -212,3 +213,33 @@ while (count<25)&&(i<=length(comparison))
 end
 
 
+%% Evaluation - TP,FP,TN,FN
+
+%True Positive: Sum of Face images predicted correctly
+%False Positive: Sum of Non-Face images predicted wrongly
+%True Negative: Sum of Non-Face images predicted correctly
+%False Negative: Sum of Face images predicted  wrongly
+[TP, FP, TN, FN] = TP_FP_TN_FN(testLabs, classificationResult);
+
+%Build a confusion matrix
+Confusion_Matrix = {'Actual_Face'; 'Actual_NonFace'};
+Predict_Face = {TP; FP};
+Predict_NonFace =  {FN; TN};
+Confusion_Table = table(Confusion_Matrix, Predict_Face, Predict_NonFace);
+
+%how confusion matrix in a figure
+Confusion_matrix_show = uifigure;
+uitable(Confusion_matrix_show, 'Data', Confusion_Table);
+%% Evaluation -  Precision, recall, specificity, etc
+
+%It is based on value of TP, FP, TN, FN
+[Recall, Precision, Specificity, Sensitivity, F_measure, False_alarm_rate]  = Precision_Sensitivity(TP, FP, TN, FN);
+
+%Record test images size and precision, recall, specificity, etc in a matrix
+Evaluation_Name = {'Test images size'; 'Recall'; 'Precision'; 'Specificity';'Sensitivity'; 'F-measure'; 'False alarm rate'};
+Values = {length(testLabs); Recall; Precision; Specificity; Sensitivity; F_measure; False_alarm_rate};
+Precision_Sensitivity = table(Evaluation_Name, Values);
+
+%Show test images size and precision, recall, specificity, etc in a figure
+Precision_Sensitivity_show = uifigure;
+uitable(Precision_Sensitivity_show, 'Data', Precision_Sensitivity);
