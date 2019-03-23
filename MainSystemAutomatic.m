@@ -284,8 +284,8 @@ if f > 1
     end
 end
 
-%%[trainFeatures_fold, trainLabs_fold] = augmentImages(trainFeatures_fold, trainLabs_fold); % For training
-%%[testFeatures_fold, testLabs_fold] = augmentImages(testFeatures_fold, testLabs_fold); %For testing
+[trainFeatures_fold, trainLabs_fold] = augmentImages(trainFeatures_fold, trainLabs_fold); % For training
+[testFeatures_fold, testLabs_fold] = augmentImages(testFeatures_fold, testLabs_fold); %For testing
 
 trainFeatures_matrix = [trainFeatures_matrix, trainFeatures_fold];
 testFeatures_matrix = [testFeatures_matrix, testFeatures_fold];
@@ -344,9 +344,9 @@ end
 %Supervised Nearest Neighbour Training
 %modelNN = NNtraining(trainFeatures, trainLabs);
 %Supervised SVM Training
-%modelSVM = SVMtraining(trainFeatures, trainLabs);
+modelSVM = SVMtraining(trainFeatures, trainLabs);
 %% Training models - Gabor features
-modelNN = NNtraining(gabortrainFeatures, trainLabs_fold);
+%modelNN = NNtraining(gabortrainFeatures, trainLabs_fold);
 % Supervised SVM Training(devided into train data and test data)
 %modelSVM = SVMtraining(gabortrainFeatures, trainLabs);
 %% Testing model
@@ -356,7 +356,7 @@ for i=1:testSize
     
     testnumber= gabortestFeatures(i,:); % For gabor feature descriptor
     %% NN model
-    classificationResult(i,1) = NNTesting(testnumber, modelNN);
+    %classificationResult(i,1) = NNTesting(testnumber, modelNN);
     %Accuracy is 0.5083. Which is again strange. Gives a reverse of what
     %happened in the manual system. With k = 1 in the KNNTesting the
     %accuracy is around 0.7
@@ -365,7 +365,7 @@ for i=1:testSize
     %classificationResult(i,1) = KNNTesting(testnumber, modelNN, 4);
     
     %% SVM Model
-    %classificationResult(i,1) = SVMTesting(testnumber,modelSVM);
+    classificationResult(i,1) = SVMTesting(testnumber,modelSVM);
     %SVM accuracy with no changed parameters and full image feature desc is 0.7083
     %SVM accuracy with no changed parameters, hist equalisation
     %and gabor feature desc is 0.9042
@@ -480,7 +480,7 @@ False_alarm_rate = 0;
 
 % Table elements record accuracy in every Features sets(with different number
 %of f)
-CV_Sequence = {'Features Set sequence for Cross-validation'};
+CV_Sequence = {'Sequence for CV'};
 CV_Accuracy =  {'Accuracy'};
 Accuracy = 0;
 
