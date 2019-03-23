@@ -212,28 +212,25 @@ for i=min(totalLabels):max(totalLabels)
     plot3(X_reduce(indexes,1),X_reduce(indexes,2),X_reduce(indexes,3),colours(count,:))
 end
 
+%Decide which Classification way to choose
+% "1" means normal dividing into training set and testing set
+% "2" means Half/half
+% "3" means Cross-calidation(Recommended)
+Which_Classification = 3
 
-%%1
+
+
+if Which_Classification == 2
 %Half/half way to divide train and test Features equally
 %Percentage is the occupation of test Features in all Features
 %0.5 is default(Half/half), and you can modify it to be another value
 percentage = 0.5;
 [trainingFeatures, testingFeatures, trainingLabels, testingLabels] = Halfhalf(trainingFeatures, testingFeatures, trainingLabels, testingLabels, percentage);
-
-%%2
-%Cross-validation way to classify the features
-%This is a munual way to execute cross-validation
-%The newest test features are selected out randomly in every fold
-%choose test Features in every fold randomly
-%n equal the fold number
-%n = 30;
-%[trainingFeatures, testingFeatures, trainingLabels, testingLabels] = CrossValidation(trainingFeatures, testingFeatures, trainingLabels, testingLabels, n);
-
 %% NN Training 
-modelNN = NNtraining(trainingFeatures, trainingLabels);
+modelNN = NNtraining(trainingFeatures, trainingLabels(:,f));
 
 % Testing
-for i=1:size(testingFeatures,1)
+for i=1:size(testingFeatures, 1)
     
     testnumber= testingFeatures(i,:);
     
@@ -354,10 +351,327 @@ uitable(Confusion_matrix_show, 'Data', Confusion_Table);
 [Recall, Precision, Specificity, Sensitivity, F_measure, False_alarm_rate]  = Precision_Sensitivity(TP, FP, TN, FN);
 
 %Record test images size and precision, recall, specificity, etc in a matrix
-Evaluation_Name = {'Test images size'; 'Recall'; 'Precision'; 'Specificity';'Sensitivity'; 'F-measure'; 'False alarm rate'};
-Values = {length(testingLabels); Recall; Precision; Specificity; Sensitivity; F_measure; False_alarm_rate};
+Evaluation_Name = {'Accuracy','Test images size'; 'Recall'; 'Precision'; 'Specificity';'Sensitivity'; 'F-measure'; 'False alarm rate'};
+Values = {Accuracy, length(testingLabels); Recall; Precision; Specificity; Sensitivity; F_measure; False_alarm_rate};
 Precision_Sensitivity = table(Evaluation_Name, Values);
 
 %Show test images size and precision, recall, specificity, etc in a figure
 Precision_Sensitivity_show = uifigure;
 uitable(Precision_Sensitivity_show, 'Data', Precision_Sensitivity);
+end
+
+
+
+if Which_Classification == 3
+%Cross-validation: For each classification: Divide Features into n folds, and select one of features
+%in each fold as test features, perform classification fold times with
+%each classification's test features location different from each other
+%.And then count the average accuracy of each classification's model.
+
+%Evaluation variables record Cross-validation for Each Features Set
+accuracy = [];
+tp = [];
+fp = [];
+tn = [];
+fn = [];
+recall = [];
+precision = [];
+specificity = [];
+sensitivity = [];
+f_measure = [];
+false_alarm_rate = [];
+
+%Total label length of trainFeatures and testFeatures
+length = size(trainingLabels) + size(testingLabels);
+
+%n equal the number of fold 
+n = 23; 
+
+%Number of features in each fold
+%Consider the situation that remainder exists
+if(mod(length(1,1),n) ~= 0)
+    fold_size = int16(length(1,1) / (n - 1) - mod(length(1,1) / (n - 1), 1));
+    if fold_size * n < length(1,1)
+        fold_size = fold_size + 1;
+    end
+else
+    fold_size = int16(length(1,1) / n);
+end
+
+%Create matrix to record each Features set for Cross-validation
+trainingFeatures_matrix = {};
+testingFeatures_matrix = {};
+trainingLabels_matrix = {};
+testingLabels_matrix = {};
+
+
+%Modeling tranining and testing, evaluation just for Cross-validation
+for f = 1:fold_size(1,1)
+
+if f > 1
+    testingFeatures_fold_size_before = size(testingFeatures_fold);
+end
+
+%training and testing features and Labels when in number f Features Set
+trainingFeatures_fold = trainingFeatures;
+trainingLabels_fold = trainingLabels;
+testingFeatures_fold = testingFeatures;
+testingLabels_fold = testingLabels;
+
+[trainingFeatures_fold, testingFeatures_fold, trainingLabels_fold, testingLabels_fold] = CrossValidation(trainingFeatures_fold, testingFeatures_fold, trainingLabels_fold, testingLabels_fold, n, fold_size(1,1), length, f);
+
+%To make size of each column of train and test Features set is equal
+%To prevent the last bag do not include a test features, a repeat features is allowed
+testingFeatures_fold_size_after = size(testingFeatures_fold);
+if f > 1 
+    if testingFeatures_fold_size_before(1,1) > testingFeatures_fold_size_after(1,1)
+       testingFeatures_fold = [testingFeatures_fold; testingFeatures(testingFeatures_fold_size_before(1,1),:)];
+       testingLabels_fold = [testingLabels_fold; testingLabels(testingFeatures_fold_size_before(1,1),:)];
+    else
+       trainingFeatures_fold = [trainingFeatures_fold; testingFeatures(testingFeatures_fold_size_before(1,1),:)];
+       trainingLabels_fold = [trainingLabels_fold; testingLabels(testingFeatures_fold_size_before(1,1),:)];
+    end
+end
+
+trainingFeatures_matrix = [trainingFeatures_matrix, trainingFeatures_fold];
+testingFeatures_matrix = [testingFeatures_matrix, testingFeatures_fold];
+trainingLabels_matrix = [trainingLabels_matrix, trainingLabels_fold];
+testingLabels_matrix = [testingLabels_matrix, testingLabels_fold];
+
+%% NN Training 
+modelNN = NNtraining(trainingFeatures_fold, trainingLabels_fold);
+
+
+% Testing
+for i=1:size(testingFeatures_fold, 1)
+    
+    testnumber= testingFeatures_fold(i,:);
+    
+    %% NN model
+    %classificationResult(i,1) = NNTesting(testnumber, modelNN);
+    %Accuracy is 0.75 for NN. With no resampling methods, just manual
+    %feature extraction. Weird that it's this way because when it's tested
+    %with KNN and K is set to 1 we get an accuracy of 0.6
+    
+    %% KNN model
+    %classificationResult(i,1) = KNNTesting(testnumber, modelNN, 5);
+    %Accuracy is between 0.58 and 0.62 for different values of K
+    
+    %% SVM Model
+    %classificationResult(i,1) = SVMTesting(testnumber,modelSVM);
+    %Accuracy with no changed parameters is 0.5. No better than a random
+    %choice model
+
+end
+
+%% This bit is just to record a table for all of the accuracies for varying amounts of K in KNN
+%Could be useful for the report later
+
+accuracyForEachK(20,2) = 0;
+accuracyForEachK(:,1) = 1:20;
+for k = 1:20
+   
+    for i = 1:size(testingFeatures_fold,1)
+        testnumber= testingFeatures_fold(i,:);
+        classificationResult(i,1) = KNNTesting(testnumber, modelNN, k);
+    end 
+    
+    comparison = (testingLabels_fold==classificationResult);
+    comparison_size = size(comparison);
+    Accuracy = sum(comparison)/comparison_size(1,1);
+    accuracyForEachK(k,2) = Accuracy; 
+    %accuracyForEachK is the final table holding the accuracy of the model
+    %for each value of K from 1:20
+end
+
+%accuracyForEachK %Accuracy is between 0.58 and 0.62 for different values of K
+%Show accuracy table out in a figure
+ %f = uifigure;
+ %uitable(f, 'Data', accuracyForEachK);
+
+%% Evaluation - Accuracy
+
+% Finally we compared the predicted classification from our mahcine
+% learning algorithm against the real labelling of the testing image
+comparison = (testingLabels_fold==classificationResult);
+
+%Accuracy is the most common metric. It is defiend as the number of
+%correctly classified samples/ the total number of tested samples
+Accuracy = sum(comparison)/comparison_size(1,1)
+
+%% We display at most 25 of the correctly classified images
+%figure, 
+%sgtitle('Correct Classification'),
+%colormap(gray)
+%count=0;
+%i=1;
+%while (count<25)&&(i<=comparison_size(1,1))
+   
+ %   if comparison(i)
+  %      count=count+1;
+   %     subplot(5,5,count)
+    %    Im = reshape(testingFeatures(i,:),27,18);
+     %   imagesc(Im)
+      %  axis off
+    %end
+    
+    %i=i+1;
+    
+%end
+
+
+%% We display at most 25 of the incorrectly classified images
+%figure
+%sgtitle('Wrong Classification'),
+%colormap(gray)
+%count=0;
+%i=1;
+%while (count<25)&&(i<=comparison_size(1,1))
+    
+%    if ~comparison(i)
+%        count=count+1;
+%        subplot(5,5,count)
+%        Im = reshape(testingFeatures(i,:),27,18);
+%        imagesc(Im)
+%        title(labelToDescription(classificationResult(i)))
+%        axis off
+ %   end
+    
+  %  i=i+1;
+    
+%end
+%% Evaluation - TP,FP,TN,FN
+
+%True Positive: Sum of Face images predicted correctly
+%False Positive: Sum of Non-Face images predicted wrongly
+%True Negative: Sum of Non-Face images predicted correctly
+%False Negative: Sum of Face images predicted  wrongly
+[TP, FP, TN, FN] = TP_FP_TN_FN(testingLabels_fold, classificationResult);
+
+%% Evaluation -  Precision, recall, specificity, etc
+%It is based on value of TP, FP, TN, FN
+[Recall, Precision, Specificity, Sensitivity, F_measure, False_alarm_rate]  = Precision_Sensitivity(TP, FP, TN, FN);
+
+%% Record evaluation data 
+accuracy = [accuracy, Accuracy];
+tp = [tp,TP];
+fp = [fp, FP];
+tn = [tn, TN];
+fn = [fn, FN];
+recall = [recall, Recall];
+precision = [precision, Precision];
+sensitivity = [sensitivity, Sensitivity];
+specificity = [specificity, Specificity];
+f_measure = [f_measure, F_measure];
+false_alarm_rate = [false_alarm_rate, False_alarm_rate];
+
+end
+
+Recall = 0;
+Precision = 0;
+Specificity = 0;
+Sensitivity = 0; 
+F_measure = 0;
+False_alarm_rate = 0;
+
+% Table elements record accuracy in every Features sets(with different number
+%of f)
+CV_Sequence = {'Features Set sequence for Cross-validation'};
+CV_Accuracy =  {'Accuracy'};
+Accuracy = 0;
+
+
+%Record number of useful Precision, recall, specificity, etc
+count_recall = 0;
+count_precision = 0;
+count_sensitivity = 0;
+count_specificity = 0;
+count_f_measure = 0;
+count_false_alarm_rate = 0;
+
+for j = 1:fold_size(1,1)
+    Accuracy = Accuracy + accuracy(:,j);
+    CV_Sequence = [CV_Sequence; j];
+    CV_Accuracy = [CV_Accuracy; accuracy(:,j)];
+    TP = TP + tp(:,j);
+    FP = FP + fp(:,j);
+    TN = TN + tn(:,j);
+    FN = FN + fn(:,j);
+    if recall(:,j) ~= Inf
+        Recall = Recall + recall(:,j);
+        count_recall = count_recall + 1;
+    end
+    if precision(:,j) ~= Inf
+        Precision = Precision + precision(:,j);
+        count_precision = count_precision + 1;
+    end
+    if sensitivity(:,j) ~= Inf
+        Sensitivity = Sensitivity + sensitivity(:,j);
+        count_sensitivity = count_sensitivity + 1;
+    end
+    if specificity(:,j) ~= Inf
+       Specificity = Specificity + specificity(:,j);
+       count_specificity = count_specificity + 1;
+    end
+    if f_measure(:,j) ~= Inf     
+       F_measure = F_measure + f_measure(:,j);
+       count_f_measure = count_f_measure + 1;
+    end
+    if false_alarm_rate(:,j) ~= Inf
+       False_alarm_rate = False_alarm_rate + false_alarm_rate(:,j);
+       count_false_alarm_rate = count_false_alarm_rate + 1;
+    end
+end
+
+%Calculate the average of each evaluation variable
+Accuracy = Accuracy / double(fold_size(1,1));
+CV_Sequence = [CV_Sequence; 'Average'];
+CV_Accuracy = [CV_Accuracy; Accuracy];
+TP = int16(TP / double(fold_size(1,1)));
+FP = int16(FP / double(fold_size(1,1)));
+TN = int16(TN / double(fold_size(1,1)));
+FN = int16(FN / double(fold_size(1,1)));
+Recall = Recall / count_recall;
+Precision = Precision / count_precision;
+Sensitivity = Sensitivity / count_sensitivity;
+Specificity = Specificity / count_specificity;
+F_measure = F_measure / count_f_measure;
+False_alarm_rate = False_alarm_rate / count_false_alarm_rate;
+
+%Build a table recording accuracy in every Features sets(with different number
+%of f)
+CV_AccuracyTable = table(CV_Sequence, CV_Accuracy);
+
+%Show Accuracy table  in a figure
+Accuracy_show = uifigure;
+uitable(Accuracy_show, 'Data', CV_AccuracyTable);
+
+%Build a confusion matrix
+Confusion_Matrix = {'Actual_Face'; 'Actual_NonFace'};
+Predict_Face = {TP; FP};
+Predict_NonFace =  {FN; TN};
+Confusion_Table = table(Confusion_Matrix, Predict_Face, Predict_NonFace);
+
+%Show confusion matrix in a figure
+Confusion_matrix_show = uifigure;
+uitable(Confusion_matrix_show, 'Data', Confusion_Table);
+
+%Record test images size and precision, recall, specificity, etc in a matrix
+Evaluation_Name = {'Accuracy';'Test images size'; 'Recall'; 'Precision'; 'Specificity';'Sensitivity'; 'F-measure'; 'False alarm rate'};
+testingLabels_fold_size = size(testingLabels_fold);
+Values = {Accuracy; testingLabels_fold_size(1,1); Recall; Precision; Specificity; Sensitivity; F_measure; False_alarm_rate};
+Precision_Sensitivity = table(Evaluation_Name, Values);
+
+%Show test images size and precision, recall, specificity, etc in a figure
+Precision_Sensitivity_show = uifigure;
+uitable(Precision_Sensitivity_show, 'Data', Precision_Sensitivity);
+
+%Training Data with all Features
+Features = [trainingFeatures_fold; testingFeatures_fold];
+Labels = [trainingLabels_fold; testingLabels_fold];
+modelNN = NNtraining(Features, Labels);
+
+%This is the end of model building, testing and evaluation for
+%Cross-validation
+
+end
