@@ -95,6 +95,11 @@ end
 %modelNN = NNtraining(gabortrainFeatures, trainLabs);
 % Supervised SVM Training(devided into train data and test data)
 modelSVM = SVMtraining(gabortrainFeatures, trainLabs);
+<<<<<<< Updated upstream
+=======
+save detectorModelSVM modelSVM
+
+>>>>>>> Stashed changes
 %% Testing model
 for i=1:testSize 
     
@@ -571,6 +576,7 @@ Precision_Sensitivity = table(Evaluation_Name, Values);
 Precision_Sensitivity_show = uifigure;
 uitable(Precision_Sensitivity_show, 'Data', Precision_Sensitivity);
 
+<<<<<<< Updated upstream
 %Training Data with all Features
 Features = [trainFeatures_fold; testFeatures_fold];
 Labels = [trainLabs_fold; testLabs_fold];
@@ -580,3 +586,30 @@ modelNN = NNtraining(Features, Labels);
 %Cross-validation
 
 end
+=======
+
+%% Detection Implementation
+im1 = imread('im1.jpg');
+im2 = imread('im2.jpg');
+im3 = imread('im3.jpg');
+im4 = imread('im4.jpg');
+
+detections = SlidingWindow(im3);
+DrawBoundingBoxes(im3, detections);
+
+% Non maxima Supression
+detections = simpleNMS(detections);
+DrawBoundingBoxes(im3, detections);
+
+
+%% Evaluation
+% %Groundtruth
+% %im1 = 7 faces
+% %im2 = 15 faces
+% %im3 = 8 faces
+% %im4 = 57?
+% solutionTruth = [];
+%              
+% comparison = (predictedFullImage==solutionTruth);
+% Accuracy = sum(sum(comparison))/ (size(comparison,1)*size(comparison,2))
+% >>>>>>> Stashed changes
