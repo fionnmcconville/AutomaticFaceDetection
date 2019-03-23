@@ -403,26 +403,27 @@ comparison = (testLabs_fold==classificationResult);
 comparison_size = size(comparison);
 Accuracy = sum(comparison)/comparison_size(1,1)
 
-%We display all of the correctly classified images. (Max is around 25)
-figure, 
-sgtitle('Correct Classification'),
-colormap(gray)
-count=0;
-i=1;
-Wrong_Record = zeros(testSize,1)
-while (count< testSize)&&(i<=comparison_size(1,1))
+%% We display at most 25 of the correctly classified images
+%figure, 
+%sgtitle('Correct Classification'),
+%colormap(gray)
+%count=0;
+%i=1;
+%while (count<25)&&(i<=comparison_size(1,1))
    
-    if comparison(i)
-        count=count+1;
-        subplot(5,5,count)
-        Im = reshape(testFeatures(i,:),27,18);
-        imagesc(Im)
-        axis off
-    end
+ %   if comparison(i)
+  %      count=count+1;
+   %     subplot(5,5,count)
+    %    Im = reshape(testingFeatures(i,:),27,18);
+     %   imagesc(Im)
+      %  axis off
+    %end
     
-    i=i+1;
+    %i=i+1;
     
-end
+%end
+
+
 %We display all of the incorrectly classified images. (Max is around 25)
 %figure
 %sgtitle('Wrong Classification'),
@@ -480,8 +481,8 @@ False_alarm_rate = 0;
 
 % Table elements record accuracy in every Features sets(with different number
 %of f)
-CV_Sequence = {'Sequence for CV'};
-CV_Accuracy =  {'Accuracy'};
+CV_Sequence = {};
+CV_Accuracy =  {};
 Accuracy = 0;
 
 
