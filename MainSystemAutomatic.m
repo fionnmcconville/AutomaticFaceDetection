@@ -277,15 +277,15 @@ testFeatures_fold_size_after = size(testFeatures_fold);
 if f > 1 
     if testFeatures_fold_size_before(1,1) > testFeatures_fold_size_after(1,1)
        testFeatures_fold = [testFeatures_fold; testFeatures(testFeatures_fold_size_before(1,1),:)];
-       testLabs_fold = [testLabs_fold; testingLabs(testFeatures_fold_size_before(1,1),:)];
+       testLabs_fold = [testLabs_fold; testLabs(testFeatures_fold_size_before(1,1),:)];
     else
        trainFeatures_fold = [trainFeatures_fold; testFeatures(testFeatures_fold_size_before(1,1),:)];
        trainLabs_fold = [trainLabs_fold; testLabs(testFeatures_fold_size_before(1,1),:)];
     end
 end
 
-[trainFeatures_fold, trainLabs_fold] = augmentImages(trainFeatures_fold, trainLabs_fold); % For training
-[testFeatures_fold, testLabs_fold] = augmentImages(testFeatures_fold, testLabs_fold); %For testing
+%%[trainFeatures_fold, trainLabs_fold] = augmentImages(trainFeatures_fold, trainLabs_fold); % For training
+%%[testFeatures_fold, testLabs_fold] = augmentImages(testFeatures_fold, testLabs_fold); %For testing
 
 trainFeatures_matrix = [trainFeatures_matrix, trainFeatures_fold];
 testFeatures_matrix = [testFeatures_matrix, testFeatures_fold];
@@ -346,7 +346,7 @@ end
 %Supervised SVM Training
 %modelSVM = SVMtraining(trainFeatures, trainLabs);
 %% Training models - Gabor features
-modelNN = NNtraining(gabortrainFeatures, trainLabs);
+modelNN = NNtraining(gabortrainFeatures, trainLabs_fold);
 % Supervised SVM Training(devided into train data and test data)
 %modelSVM = SVMtraining(gabortrainFeatures, trainLabs);
 %% Testing model
@@ -356,13 +356,13 @@ for i=1:testSize
     
     testnumber= gabortestFeatures(i,:); % For gabor feature descriptor
     %% NN model
-    %classificationResult(i,1) = NNTesting(testnumber, modelNN);
+    classificationResult(i,1) = NNTesting(testnumber, modelNN);
     %Accuracy is 0.5083. Which is again strange. Gives a reverse of what
     %happened in the manual system. With k = 1 in the KNNTesting the
     %accuracy is around 0.7
     
     %% KNN model
-    classificationResult(i,1) = KNNTesting(testnumber, modelNN, 4);
+    %classificationResult(i,1) = KNNTesting(testnumber, modelNN, 4);
     
     %% SVM Model
     %classificationResult(i,1) = SVMTesting(testnumber,modelSVM);
@@ -397,29 +397,32 @@ end
 %% Evaluation - Accuracy
 % Finally we compared the predicted classification from our mahcine
 % learning algorithm against the real labelling of the testing image
-comparison = (testLabs==classificationResult);
+comparison = (testLabs_fold==classificationResult);
 %Accuracy is the most common metric. It is defiend as the number of
 %correctly classified samples/ the total number of tested samples
-Accuracy = sum(comparison)/length(comparison)
+comparison_size = size(comparison);
+Accuracy = sum(comparison)/comparison_size(1,1)
+
 %We display all of the correctly classified images. (Max is around 25)
-%figure, 
-%sgtitle('Correct Classification'),
-%colormap(gray)
-%count=0;
-%i=1;
-%while (count<25)&&(i<=length(comparison))
+figure, 
+sgtitle('Correct Classification'),
+colormap(gray)
+count=0;
+i=1;
+Wrong_Record = zeros(testSize,1)
+while (count< testSize)&&(i<=comparison_size(1,1))
    
- %   if comparison(i)
-  %      count=count+1;
-   %     subplot(5,5,count)
-    %    Im = reshape(testFeatures(i,:),27,18);
-     %   imagesc(Im)
-      %  axis off
-    %end
+    if comparison(i)
+        count=count+1;
+        subplot(5,5,count)
+        Im = reshape(testFeatures(i,:),27,18);
+        imagesc(Im)
+        axis off
+    end
     
-    %i=i+1;
+    i=i+1;
     
-%end
+end
 %We display all of the incorrectly classified images. (Max is around 25)
 %figure
 %sgtitle('Wrong Classification'),
@@ -559,8 +562,8 @@ uitable(Confusion_matrix_show, 'Data', Confusion_Table);
 
 %Record test images size and precision, recall, specificity, etc in a matrix
 Evaluation_Name = {'Accuracy';'Test images size'; 'Recall'; 'Precision'; 'Specificity';'Sensitivity'; 'F-measure'; 'False alarm rate'};
-testingLabels_fold_size = size(testingLabels_fold);
-Values = {Accuracy; testingLabels_fold_size(1,1); Recall; Precision; Specificity; Sensitivity; F_measure; False_alarm_rate};
+testLabs_fold_size = size(testLabs_fold);
+Values = {Accuracy; testLabs_fold_size(1,1); Recall; Precision; Specificity; Sensitivity; F_measure; False_alarm_rate};
 Precision_Sensitivity = table(Evaluation_Name, Values);
 
 %Show test images size and precision, recall, specificity, etc in a figure
@@ -568,8 +571,8 @@ Precision_Sensitivity_show = uifigure;
 uitable(Precision_Sensitivity_show, 'Data', Precision_Sensitivity);
 
 %Training Data with all Features
-Features = [trainingFeatures_fold; testingFeatures_fold];
-Labels = [trainingLabels_fold; testingLabels_fold];
+Features = [trainFeatures_fold; testFeatures_fold];
+Labels = [trainLabs_fold; testLabs_fold];
 modelNN = NNtraining(Features, Labels);
 
 %This is the end of model building, testing and evaluation for
