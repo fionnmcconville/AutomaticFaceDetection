@@ -8,21 +8,21 @@ function [Recall, Precision, Specificity, Sensitivity, F_measure, False_alarm_ra
 if (TP + FN) ~= 0
     Recall = TP / (TP + FN);
 else
-    Recall = 'Not exist';
+    Recall = Inf;
 end
 
 %Precision
 if (TP + FP) ~= 0
     Precision = TP / (TP + FP);
 else 
-    Precision = 'Not exist';
+    Precision = Inf;
 end
 
 %Specificity
 if (TN + FP) ~= 0
     Specificity = TN / (TN + FP);
 else
-    Specificity = 'Not exist';
+    Specificity = Inf;
 end
 
 %Sensitivity
@@ -32,14 +32,14 @@ Sensitivity  =Recall;
 if(2 * TP + FN + FP) ~= 0
     F_measure = 2 * TP / (2 * TP + FN + FP);
 else
-    F_measure = 'Not exist';
+    F_measure = Inf;
 end
 
 %False alarm rate
 if (TN + FP) ~= 0
     False_alarm_rate = 1 - Specificity;
 else
-    False_alarm_rate = 'Not exist';
+    False_alarm_rate = Inf;
 end
 
 end
