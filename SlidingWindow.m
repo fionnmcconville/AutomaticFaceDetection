@@ -5,8 +5,11 @@ function [detections] = SlidingWindow(I)
 %   for detections of the objects that the model has been trained to
 %   detect.
 
+addpath .\SVM-KM\
+
 %We load the classification model of our choice
-modelLoad = load('detectorModelSVM.mat');
+%modelLoad = load('detectorModelSVM.mat');
+modelLoad = load('PolynomialModelSVM.mat');
 model = modelLoad.modelSVM;
 
 % convert image to gray scale if not already
@@ -26,7 +29,7 @@ stepSize = 10;
 %create structure to hold all detections
 object_detections = [];
 
-for x = 1:8
+for x = 4:8
     Im = imresize(I, multiplier*x);
     digitCounter=0;
     winWidth = floor(windowWidth*(multiplier*(x+multiplier)));
@@ -48,17 +51,29 @@ for x = 1:8
 
                 %resample them into a 27x18 imaGE
                 digitIm = imresize(digitIm, [27 18]);
+                %colormap(gray), imagesc(digitIm), drawnow;
+                
+                %Draw sliding window on image
+                xCo = (r-1) / (multiplier*x);
+                yCo = (c-1) / (multiplier*x);
+                ht = xCo + winHeight / (multiplier*x);
+                wd = yCo + winWidth / (multiplier*x);  
+                p = plot([yCo yCo wd wd yCo],[xCo ht ht xCo xCo], 'r'); 
+                drawnow;
+                delete(p);
+                
+                %% Gabor features - Comment out if you're using PCA
                 digitIm = enhanceContrastALS(uint8(digitIm));
-                digitIm = gabor_feature_vector(uint8(digitIm));
-
-                %display the individually segmented digits
-%                 subplot(samplingX,samplingY,digitCounter)
-%                 imshow(digitIm)
-
-                %we reshape the digit into a vector
-                digitIm = reshape(digitIm, 1, []);
-
+                digitIm = gabor_feature_vector(uint8(digitIm)); %Gabor Features
+                digitIm = digitIm(:)'; %Turn back into feature vector
                 [prediction, maxi] =  SVMTesting(digitIm,model);
+
+                %% PCA - Comment out if using Gabor
+%                 digitIm = digitIm(:)';
+%                 Xpca = (double(digitIm) - model.meanX) * model.eigenvectors; %PCA Features
+%                 [prediction, maxi] =  SVMTesting(Xpca,model);
+%                 
+                %% Detections
                 if prediction > 0.5
                     xCord = (r-1) / (multiplier*x);
                     yCord = (c-1) / (multiplier*x);
@@ -71,8 +86,8 @@ for x = 1:8
             end
         end        
     end
-%     figure
-%     imagesc(map);
+   
+%      colormap(gray), imagesc(map), drawnow;
 end
 detections = object_detections;
 end

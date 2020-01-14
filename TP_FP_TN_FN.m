@@ -23,7 +23,7 @@ for i = 1:length(testLabs)
     elseif True(i) ~= 1 && testLabs(i) == 1
         
         %Predicted wrongly and predicted as Face image
-        FP = FP + 1;
+        FN = FN + 1;
         
     elseif True(i) == 1 && testLabs(i) ~= 1
         
@@ -33,7 +33,7 @@ for i = 1:length(testLabs)
     else
         
          %Predicted wrongly and predicted as Non-Face image
-        FN = FN + 1;
+        FP = FP + 1;
         
     end
 end

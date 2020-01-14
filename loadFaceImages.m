@@ -8,7 +8,7 @@ end
 % Data augmentation will increase the size of the dataset by created variations 
 %(mirroring, flipping, displacements) of each given image. This aims to produce more
 % training images and, therefore, improve performance
-augmented=1;
+augmented=0;
 
 
 fp = fopen(filename, 'rb');
@@ -47,7 +47,7 @@ for im=1:sampling:numberOfImages
             images= [images; vector];
             labels= [labels; label];
             
-            Itemp =circshift(I,1)
+            Itemp =circshift(I,1);
             vector = reshape(Itemp,1, size(I, 1) * size(I, 2));
             vector = double(vector); % / 255;
             images= [images; vector];
@@ -71,7 +71,7 @@ for im=1:sampling:numberOfImages
             images= [images; vector];
             labels= [labels; label];
             
-            Itemp =circshift(fliplr(I),1)
+            Itemp =circshift(fliplr(I),1);
             vector = reshape(Itemp,1, size(I, 1) * size(I, 2));
             vector = double(vector); % / 255;
             images= [images; vector];
